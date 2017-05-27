@@ -47,6 +47,7 @@ bool digitalReadDebounce(int pin) {
 
 void transmit(String datatype, String data) {
   Serial.print(datatype + ":" + data + "\n");
+  delay(1000); //TEMP - testing
 }
 
 void ArduinoSleep() {
