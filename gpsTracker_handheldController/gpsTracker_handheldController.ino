@@ -1,3 +1,11 @@
+#define MAP_WIDTH_PX 128
+#define MAP_HEIGHT_PX 103
+
+#define MAP_MIN_LAT  51.49933 //bottom of map
+#define MAP_MAX_LAT  51.50922 //top of map
+#define MAP_MIN_LONG -0.14816 //left of map
+#define MAP_MAX_LONG -0.12059 //right of map
+
 #define PING_BUTTON 4
 #define REQUEST_GPS_ONCE_BUTTON 5
 #define REQUEST_GPS_CONTINUOUS_BUTTON 6
@@ -7,7 +15,7 @@
 #define mosi 11 // Don't change
 #define cs   10
 #define dc   A0
-#define rst  A1  // you can also connect this to the Arduino reset
+#define rst  A1 // you can also connect this to the Arduino reset
 
 #define _SS_MAX_RX_BUFF 128
 #define SOFTWARE_SERIAL_RX 3
@@ -18,7 +26,7 @@
 #include <SPI.h>
 #include <SoftwareSerial.h>
 
-//Include the bitmap of the map. Location of the GPS tracker will be drawn on the map
+//Include the bitmap of the map. Location of the GPS tracker is drawn on the map
 #include "mapBitmap.h"
 
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); //for HC-12 wireless communication module.
@@ -61,14 +69,53 @@ void setCursorLine(unsigned int lineX, unsigned int lineY) {
   tft.setCursor(lineX * 6, lineY * 8);
 }
 
-void clearGPSTFT() {
+void clearTFTGPS() {
   tft.fillRect(5 * 6, 15 * 8, 17 * 6, 2 * 8, QDTech_BLACK); //clear lat and long
   tft.fillRect(5 * 6, 17 * 8, 6 * 6, 3 * 8, QDTech_BLACK); //clear bottom left values
   tft.fillRect(16 * 6, 17 * 8, 6 * 6, 3 * 8, QDTech_BLACK); //clear bottom right values
 }
 
-void clearReceivedTFT() {
+void clearTFTReceived() {
   tft.fillRect(5 * 6, 14 * 8, 17 * 6, 1 * 8, QDTech_BLACK); //clear the received text
+}
+
+void clearTFTMap() {
+  tft.fillRect(0, 0, 128, 103, QDTech_BLACK); //clear the map drawn on the TFT screen
+}
+
+void drawTFTMap() {
+  tft.drawXBitmap(0, 0, mapBitmap, MAP_WIDTH_PX, MAP_HEIGHT_PX, QDTech_WHITE); //Draw bitmap image
+}
+
+void displayLocationOnMap(float currentLatitude, float currentLongitude) {
+  //Relative X position on map between 0 and 1
+  float relativeXPosOnMap = (currentLongitude - MAP_MIN_LONG) / (MAP_MAX_LONG - MAP_MIN_LONG);
+  //Calculate screen X coordinates for current GPS location
+  int screenXPos = relativeXPosOnMap * float(MAP_WIDTH_PX);
+
+  //Relative Y position on map between 0 and 1
+  float relativeYPosOnMap = (currentLatitude - MAP_MIN_LAT) / (MAP_MAX_LAT - MAP_MIN_LAT);
+  //Calculate screen Y coordinates for current GPS location.
+  //1.0 - relativeYPosOnMap because Y-coordinates on screen are inversed relative to latitude (and the standard 'Cartesian' coordinate system
+  //i.e. Y-coordinate increases as you go down the screen. Latitude increases as you go up the screen.
+  int screenYPos = (1.0 - relativeYPosOnMap) * float(MAP_HEIGHT_PX);
+
+  //For debugging
+  //Serial.println("RelXPos: " + String(relativeXPosOnMap));
+  //Serial.println("RelYPos: " + String(relativeYPosOnMap));
+  //Serial.println("MapXPos: " + String(screenXPos));
+  //Serial.println("MapYPos: " + String(screenYPos));
+
+  tft.drawPixel(screenXPos  , screenYPos  , QDTech_RED);
+
+  //tft.drawPixel(screenXPos-1, screenYPos-1, QDTech_RED);
+  tft.drawPixel(screenXPos - 1, screenYPos  , QDTech_RED);
+  //tft.drawPixel(screenXPos-1, screenYPos+1, QDTech_RED);
+  tft.drawPixel(screenXPos  , screenYPos + 1, QDTech_RED);
+  //tft.drawPixel(screenXPos+1, screenYPos+1, QDTech_RED);
+  tft.drawPixel(screenXPos + 1, screenYPos  , QDTech_RED);
+  //tft.drawPixel(screenXPos+1, screenYPos-1, QDTech_RED);
+  tft.drawPixel(screenXPos  , screenYPos - 1, QDTech_RED);
 }
 
 void setup() {
@@ -80,8 +127,8 @@ void setup() {
   pinMode(REQUEST_GPS_CONTINUOUS_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_STOP_BUTTON, INPUT_PULLUP);
 
-  Serial.begin(1200); //for debugging
-  ss.begin(1200); //for HC-12 wireless communication module
+  //Serial.begin(1200); //For debugging
+  ss.begin(1200); //For HC-12 wireless communication module
 
   tft.init();
   tft.setRotation(0);  // 0 = Portrait, 1 = Landscape
@@ -92,7 +139,7 @@ void setup() {
   tft.setTextSize(1);
 
   //DRAW BITMAP IMAGE AND PRINT VALUE TITLES
-  tft.drawXBitmap(0, 0, mapBitmap, 128, 103, QDTech_WHITE); //Draw bitmap image
+  drawTFTMap();
   tft.drawFastHLine(0, 103, 128, QDTech_WHITE); //Note: draw on line 103, which is the 104th line
   setCursorLine(0, 13); //Print titles for values
   tft.println("Sent:");
@@ -135,13 +182,14 @@ void loop() {
     setCursorLine(5, 14);
     tft.print(String(receivedSerialString));
 
-    Serial.println("received: " + receivedSerialString);
-    Serial.println("length: " + String(sizeof(receivedSerialString)));
-    if (ss.overflow()) {
-      Serial.println("SoftwareSerial overflow!");
-    } else {
-      Serial.println("no SoftwareSerial overflow!");
-    }
+    //For debugging
+    //Serial.println("received: " + receivedSerialString);
+    //Serial.println("length: " + String(sizeof(receivedSerialString)));
+    //if (ss.overflow()) {
+    //  Serial.println("SoftwareSerial overflow!");
+    //} else {
+    //  Serial.println("no SoftwareSerial overflow!");
+    //}
 
     //Split receivedSerialString into datatype and data
     int indexofcolon = receivedSerialString.indexOf(":");
@@ -179,15 +227,14 @@ void loop() {
         }
       }
 
-      Serial.println("data type: " + datatype);
-      Serial.println("Comma count: " + String(commacount));
-      Serial.println("sizeof datacsvarray: " + String(sizeof(datacsvarray)));
-      Serial.println("==============");
-      for (int i = 0; i <= commacount; i++) {
-        setCursorLine(5, 14);
-        Serial.print("Data " + String(i) + " " + datacsvarray[i]);
-        Serial.println(",");
-      }
+      //For debugging
+      //Serial.println("data type: " + datatype);
+      //Serial.println("Comma count: " + String(commacount));
+      //Serial.println("sizeof datacsvarray: " + String(sizeof(datacsvarray)));
+      //for (int i = 0; i <= commacount; i++) {
+      //  Serial.print("Data " + String(i) + " " + datacsvarray[i]);
+      //  Serial.println(",");
+      //}
       //// PROCESSING 'datatype' AND 'datacsvarray' ////
       if (datatype == "ping") {
         if (datacsvarray[0] == "trackersend") {
@@ -197,7 +244,7 @@ void loop() {
         }
       } else if (datatype == "gps") {
         //data = "latitude,longitude,num of satellites,accuracy,speed,direction,age of data,checksum"
-        clearGPSTFT();
+        clearTFTGPS();
 
         setCursorLine(5, 15);
         tft.print(datacsvarray[0]); //latitude
@@ -220,15 +267,19 @@ void loop() {
           setCursorLine(20, 19);
           tft.print(commacount);
         }
+
+        clearTFTMap();
+        drawTFTMap();
+        displayLocationOnMap(datacsvarray[0].toFloat(), datacsvarray[1].toFloat()); //(latitude, longitude)
       } else if (datatype == "message") {
-	    clearReceivedTFT(); //message is written to the same area of the screen as received text, so this is cleared first
+        clearTFTReceived(); //message is written to the same area of the screen as received text, so this is cleared first
         setCursorLine(5, 14);
-		tft.print(datacsvarray[0]); //For messages with only one piece of data and therefore one item in datacsvarray[]
-		/*for (int i = 0; i <= commacount; i++) { //For messages with multiple items in datacsvarray[] (not used)
-          tft.print(datacsvarray[i]);
-          tft.print(",");
-        }*/
-		delay(1000); //Delay for a second to read message
+        tft.print(datacsvarray[0]); //For messages with only one piece of data and therefore one item in datacsvarray[]
+        /*for (int i = 0; i <= commacount; i++) { //For messages with multiple items in datacsvarray[] (not used)
+              tft.print(datacsvarray[i]);
+              tft.print(",");
+            }*/
+        delay(1000); //Delay for a second to read message
       } else {
         //transmit("message", "message datatype not understood");
         delay(100); //Do nothing
@@ -237,7 +288,8 @@ void loop() {
       transmit("message", "nothing on one side of colon character");
     }
     delay(200);
-	clearReceivedTFT();
+    clearTFTReceived();
     digitalWrite(LED_BUILTIN, LOW);
   }
 }
+
