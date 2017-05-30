@@ -10,6 +10,7 @@
 #define REQUEST_GPS_ONCE_BUTTON 5
 #define REQUEST_GPS_CONTINUOUS_BUTTON 6
 #define REQUEST_GPS_STOP_BUTTON 7
+#define REDRAW_MAP_BUTTON 8
 
 #define sclk 13 // Don't change
 #define mosi 11 // Don't change
@@ -126,6 +127,7 @@ void setup() {
   pinMode(REQUEST_GPS_ONCE_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_CONTINUOUS_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_STOP_BUTTON, INPUT_PULLUP);
+  pinMode(REDRAW_MAP_BUTTON, INPUT_PULLUP);
 
   //Serial.begin(1200); //For debugging
   ss.begin(1200); //For HC-12 wireless communication module
@@ -171,6 +173,10 @@ void loop() {
   }
   if (digitalReadDebounce(REQUEST_GPS_STOP_BUTTON)) {
     transmit("gps", "stop");
+  }
+  if (digitalReadDebounce(REDRAW_MAP_BUTTON)) {
+    clearTFTMap(); //Clear the map
+    drawTFTMap();  //Re-draw the map
   }
 
   if (ss.available() > 0) {
@@ -268,9 +274,10 @@ void loop() {
           tft.print(commacount);
         }
 
-        clearTFTMap();
-        drawTFTMap();
-        displayLocationOnMap(datacsvarray[0].toFloat(), datacsvarray[1].toFloat()); //(latitude, longitude)
+        clearTFTMap(); //Clear the map
+        drawTFTMap();  //Re-draw the map
+        displayLocationOnMap(datacsvarray[0].toFloat(), datacsvarray[1].toFloat()); //Display current location on the map. Arguments are (float latitude, float longitude)
+
       } else if (datatype == "message") {
         clearTFTReceived(); //message is written to the same area of the screen as received text, so this is cleared first
         setCursorLine(5, 14);
@@ -279,7 +286,7 @@ void loop() {
               tft.print(datacsvarray[i]);
               tft.print(",");
             }*/
-        delay(1000); //Delay for a second to read message
+        delay(1000); //Delay for a second so the user can read the message
       } else {
         //transmit("message", "message datatype not understood");
         delay(100); //Do nothing
