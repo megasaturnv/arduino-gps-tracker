@@ -14,7 +14,11 @@
 TinyGPS gps;
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); //For GPS module
 
-const byte OutputPowerSavingPins[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}; // Unused pins that should be set as outputs (to save power)
+// Unused pins that should be set as outputs (to save power). DO NOT plug anything into these pins.
+// ###############################################################
+// #### YOU MUST UPDATE THIS LIST IF ANY PIN CHANGES ARE MADE ####
+// ###############################################################
+const byte OutputPowerSavingPins[] = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}; 
 
 unsigned long startMillis, targetTime;
 
@@ -95,9 +99,9 @@ void setup() {
   //Loop for the amount of values in OutputPowerSavingPins array.
   //In this case, sizeof(byte) == 1 so it's not really needed.
   //This is better practice when needing to know the amount of items in an int array.
-  //for (byte i = 0; i < (sizeof(OutputPowerSavingPins) / sizeof(byte)); i++) {
-  //  pinMode(OutputPowerSavingPins[i], OUTPUT);
-  //}
+  for (byte i = 0; i < (sizeof(OutputPowerSavingPins) / sizeof(byte)); i++) {
+    pinMode(OutputPowerSavingPins[i], OUTPUT);
+  }
 
   digitalWrite(LED_BUILTIN, LOW);
   delay(500);
@@ -106,7 +110,7 @@ void setup() {
 void loop() {
   if (Serial.available() > 0) {
     digitalWrite(LED_BUILTIN, HIGH);
-    delay(4000);
+    delay(2000);
     //// PROCESSING INCOMING SERIAL DATA from "<datatype>:<csv of data>" INTO 'datatype' AND 'datacsvarray' ////
     //Read the incoming byte:
     String receivedSerialString = Serial.readStringUntil('\n');
@@ -116,7 +120,7 @@ void loop() {
     int lengthofstring = receivedSerialString.length();
     String datatype = "";
     if (indexofcolon == -1) {
-      //Transmit("message", "error - no colon in string");
+      //Transmit("message", "error - no colon");
       delay(100); //Do nothing
     } else if (indexofcolon != 0 && indexofcolon != lengthofstring - 1) {
       //Data is formatted correctly
@@ -163,24 +167,25 @@ void loop() {
       } else if (datatype == "gps") {
         //data = "latitude,longitude,num of satellites,accuracy,speed,direction,age of data,checksum"
         if (datacsvarray[0] == "once") {
-          transmit("message", "received gps once");
+          transmit("message", "rcvd gps once");
           gpsRequestMode = 1;
           requestSleep = false;
         } else if (datacsvarray[0] == "continuous") {
-          transmit("message", "received gps continuous");
+          transmit("message", "rcvd continuous");
           gpsRequestMode = 2;
           requestSleep = false;
         } else if (datacsvarray[0] == "stopcontinuous") {
-          transmit("message", "received gps stop continuous");
+          transmit("message", "rcvd gps stop");
           gpsRequestMode = 0;
         }
         targetTime = millis() + GPS_TIMEOUT;
       } else {
-        //transmit("message", "message datatype not understood");
+        //transmit("message", "datatype invalid");
         delay(100); //Do nothing
       }
     } else {
-      transmit("message", "nothing on one side of colon character");
+      //transmit("message", "empty data/dtype"); //Nothing on one side of colon character
+      delay(100); //Do nothing
     }
     delay(200);
     digitalWrite(LED_BUILTIN, LOW);
@@ -238,12 +243,12 @@ void loop() {
         }
       }
     } else { //if Arduino can't get a GPS location after GPS_TIMEOUT ms
-      transmit("message", "Unable to get GPS fix. Sleeping..."); //Tell the handheld we cannot get a GPS location
+      transmit("message", "Timeout no GPS"); //Tell the handheld we cannot get a GPS location
       gpsRequestMode = 0; //Stop requesting GPS data. Program will loop around and do requestSleep = true.
     }
   }
-  if (millis() - startMillis > MAX_ON_TIME && MAX_ON_TIME != 0) { //Fail-safe if arduino is on for too long
-    transmit("message", "Online too long without contact. Sleeping...");
+  if (millis() - startMillis > MAX_ON_TIME && MAX_ON_TIME != 0) { //Fail-safe if arduino is on for too long without contact from handheld controller
+    transmit("message", "Failsafe sleep");
     gpsRequestMode = 0;
     requestSleep = true;
     // The program would ordinarily loop back around and then set requestSleep = true because gpsRequestMode == 0
