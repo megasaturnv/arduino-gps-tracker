@@ -26,5 +26,5 @@
 * Handheld controller: Added ablity to draw an arrow at the edge of the screen if the tracker is outside the map
 * Tracking device: Increased default MAX_ON_TIME to 1 hour
 
-## v0.3.1 (Current release - master branch)
+## v0.3.1 (Current release)
 * Handheld controller: Added more configuration constants
