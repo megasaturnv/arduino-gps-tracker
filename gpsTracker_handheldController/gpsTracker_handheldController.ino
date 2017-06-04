@@ -11,6 +11,7 @@
 #define REQUEST_GPS_CONTINUOUS_BUTTON 6
 #define REQUEST_GPS_STOP_BUTTON 7
 #define REDRAW_MAP_BUTTON 8
+#define LED_PIN 9
 
 #define sclk 13 // Don't change
 #define mosi 11 // Don't change
@@ -34,6 +35,8 @@ SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); //for HC-12 wireless 
 
 Adafruit_QDTech tft = Adafruit_QDTech(cs, dc, rst);
 
+int previousCoordinates[] = { -1, -1};
+
 void transmit(String datatype, String data) {
   setCursorLine(5, 13);
   tft.print(datatype + ":" + data);
@@ -43,9 +46,9 @@ void transmit(String datatype, String data) {
 }
 
 void blinkLED() {
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_PIN, HIGH);
   delay(50);
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_PIN, LOW);
 }
 
 bool digitalReadDebounce(int pin) {
@@ -88,6 +91,42 @@ void drawTFTMap() {
   tft.drawXBitmap(0, 0, mapBitmap, MAP_WIDTH_PX, MAP_HEIGHT_PX, QDTech_WHITE); //Draw bitmap image
 }
 
+void drawArrow(byte screenX, byte screenY, byte dir) {
+  //dir is the direction of the arrow. North-West is 0, North is 1, North east is 2 such that:
+  //  NW  N  NE     0 1 2
+  //   W     E   =  7   3
+  //  SW  S  SE     6 5 4
+
+  //Note: Dir could be inferred from screenX and screenY...
+  switch (dir) {
+    case 0: //NW
+      //  fillTriangle(x0,      y0,      x1,          y1,          x2,          y2,          colour)
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY + 5, screenX + 5, screenY + 2, QDTech_RED);
+      break;
+    case 1: //N
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX + 2, screenY + 5, QDTech_RED);
+      break;
+    case 2: //NE
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX - 5, screenY + 2, QDTech_RED);
+      break;
+    case 3: //E
+      tft.fillTriangle(screenX, screenY, screenX - 5, screenY - 2, screenX - 5, screenY + 2, QDTech_RED);
+      break;
+    case 4: //SE
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY - 5, screenX - 5, screenY - 2, QDTech_RED);
+      break;
+    case 5: //S
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX - 2, screenY - 5, QDTech_RED);
+      break;
+    case 6: //SW
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX + 5, screenY - 2, QDTech_RED);
+      break;
+    case 7: //W
+      tft.fillTriangle(screenX, screenY, screenX + 5, screenY + 2, screenX + 5, screenY - 2, QDTech_RED);
+      break;
+  }
+}
+
 void displayLocationOnMap(float currentLatitude, float currentLongitude) {
   //Relative X position on map between 0 and 1
   float relativeXPosOnMap = (currentLongitude - MAP_MIN_LONG) / (MAP_MAX_LONG - MAP_MIN_LONG);
@@ -95,11 +134,12 @@ void displayLocationOnMap(float currentLatitude, float currentLongitude) {
   int screenXPos = relativeXPosOnMap * float(MAP_WIDTH_PX);
 
   //Relative Y position on map between 0 and 1
-  float relativeYPosOnMap = (currentLatitude - MAP_MIN_LAT) / (MAP_MAX_LAT - MAP_MIN_LAT);
-  //Calculate screen Y coordinates for current GPS location.
-  //1.0 - relativeYPosOnMap because Y-coordinates on screen are inversed relative to latitude (and the standard 'Cartesian' coordinate system
+  //1.0 - the relative Position because Y-coordinates on screen are inversed relative to latitude (and the standard 'Cartesian' coordinate system
   //i.e. Y-coordinate increases as you go down the screen. Latitude increases as you go up the screen.
-  int screenYPos = (1.0 - relativeYPosOnMap) * float(MAP_HEIGHT_PX);
+  //There are many ways to fix this problem. e.g. change MAP_MIN_LAT to MAP_MAX_LAT or switching the denominators should have the same result
+  float relativeYPosOnMap = 1.0 - ((currentLatitude - MAP_MIN_LAT) / (MAP_MAX_LAT - MAP_MIN_LAT));
+  //Calculate screen Y coordinates for current GPS location.
+  int screenYPos = relativeYPosOnMap * float(MAP_HEIGHT_PX);
 
   //For debugging
   //Serial.println("RelXPos: " + String(relativeXPosOnMap));
@@ -107,21 +147,66 @@ void displayLocationOnMap(float currentLatitude, float currentLongitude) {
   //Serial.println("MapXPos: " + String(screenXPos));
   //Serial.println("MapYPos: " + String(screenYPos));
 
-  tft.drawPixel(screenXPos  , screenYPos  , QDTech_RED);
+  //if tracker is on-screen
+  if (relativeXPosOnMap >= 0 && relativeXPosOnMap <= 1 && relativeYPosOnMap >= 0 && relativeYPosOnMap <= 1) {
+    //Draw pixel on map at previous coordinates for plot of location history
+    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], QDTech_BLACK); //Clear the pixel first
+    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], QDTech_GREEN);
 
-  //tft.drawPixel(screenXPos-1, screenYPos-1, QDTech_RED);
-  tft.drawPixel(screenXPos - 1, screenYPos  , QDTech_RED);
-  //tft.drawPixel(screenXPos-1, screenYPos+1, QDTech_RED);
-  tft.drawPixel(screenXPos  , screenYPos + 1, QDTech_RED);
-  //tft.drawPixel(screenXPos+1, screenYPos+1, QDTech_RED);
-  tft.drawPixel(screenXPos + 1, screenYPos  , QDTech_RED);
-  //tft.drawPixel(screenXPos+1, screenYPos-1, QDTech_RED);
-  tft.drawPixel(screenXPos  , screenYPos - 1, QDTech_RED);
+    //Draw pixel on map at current location
+    tft.drawPixel(screenXPos, screenYPos, QDTech_BLACK); //Clear the pixel first
+    tft.drawPixel(screenXPos, screenYPos, QDTech_RED);
+
+    //Uncomment to draw a '+' of pixels around location (May break line on graph showing tracker's location history)
+    //tft.drawPixel(screenXPos + 1, screenYPos    , QDTech_RED);
+    //tft.drawPixel(screenXPos - 1, screenYPos    , QDTech_RED);
+    //tft.drawPixel(screenXPos    , screenYPos + 1, QDTech_RED);
+    //tft.drawPixel(screenXPos    , screenYPos - 1, QDTech_RED);
+
+    //Uncomment to draw a 'x' of pixels around location (May break line on graph showing tracker's location history)
+    //tft.drawPixel(screenXPos-1, screenYPos-1, QDTech_RED);
+    //tft.drawPixel(screenXPos-1, screenYPos+1, QDTech_RED);
+    //tft.drawPixel(screenXPos+1, screenYPos+1, QDTech_RED);
+    //tft.drawPixel(screenXPos+1, screenYPos-1, QDTech_RED);
+
+    //Set previousCoordinates to current location for next time
+    previousCoordinates[0] = screenXPos;
+    previousCoordinates[1] = screenYPos;
+    
+    ////if tracker is off-screen////
+    ////corners of map. i.e. position is completely outside the map's boundaries
+    //if tracker is top-left
+  } else if (relativeXPosOnMap < 0 && relativeYPosOnMap < 0) {
+    drawArrow(0, 0, 0);
+    //if tracker is top-right
+  } else if (relativeXPosOnMap > 1 && relativeYPosOnMap < 0) {
+    drawArrow(MAP_WIDTH_PX, 0, 2);
+    //if tracker is bottom-right
+  } else if (relativeXPosOnMap > 1 && relativeYPosOnMap > 1) {
+    drawArrow(MAP_WIDTH_PX, MAP_HEIGHT_PX - 1, 4);
+    //if tracker is bottom-left
+  } else if (relativeXPosOnMap < 0 && relativeYPosOnMap > 1) {
+    drawArrow(0, MAP_HEIGHT_PX - 1, 6);
+
+    ////edges of map. i.e. position is outside the map in one axis but within the map on the other axis
+    //if tracker is top-middle
+  } else if (relativeXPosOnMap >= 0 && relativeXPosOnMap <= 1 && relativeYPosOnMap < 0) {
+    drawArrow(screenXPos, 0, 1);
+    //if tracker is middle-right
+  } else if (relativeXPosOnMap > 1 && relativeYPosOnMap <= 1 && relativeYPosOnMap >= 0) {
+    drawArrow(MAP_WIDTH_PX, screenYPos, 3);
+    //if tracker is bottom-middle
+  } else if (relativeXPosOnMap >= 0 && relativeXPosOnMap <= 1 && relativeYPosOnMap > 1) {
+    drawArrow(screenXPos, MAP_HEIGHT_PX - 1, 5);
+    //if tracker is middle-left
+  } else if (relativeXPosOnMap < 0 && relativeYPosOnMap <= 1 && relativeYPosOnMap >= 0) {
+    drawArrow(0, screenYPos, 7);
+  }
 }
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
 
   pinMode(PING_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_ONCE_BUTTON, INPUT_PULLUP);
@@ -158,7 +243,7 @@ void setup() {
   setCursorLine(11, 19);
   tft.print("Chck:");
 
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_PIN, LOW);
 }
 
 void loop() {
@@ -180,7 +265,7 @@ void loop() {
   }
 
   if (ss.available() > 0) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     delay(2000);
     //// PROCESSING INCOMING SERIAL DATA from "<datatype>:<csv of data>" INTO 'datatype' AND 'datacsvarray' ////
     //Read the incoming byte:
@@ -296,7 +381,7 @@ void loop() {
     }
     delay(200);
     clearTFTReceived();
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED_PIN, LOW);
   }
 }
 
