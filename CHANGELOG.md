@@ -18,10 +18,13 @@
 ## v0.2.1
 * Handheld controller: Added clear map button on pin 8
 
-## v0.3 (Current release - master branch)
+## v0.3
 * Handheld controller: Renamed LED_BUILTIN to LED_PIN and changed value to pin 9. Pin 13 is used by the TFT LCD screen
 * Handheld controller: Changed the way location is drawn on the map (from 5 pixels in a '+' shape to a single pixel)
 * Handheld controller: Added functionality to draw a green line to represent the tracker's location history
 * Handheld controller test code: Added test code for drawing arrows on the screen
 * Handheld controller: Added ablity to draw an arrow at the edge of the screen if the tracker is outside the map
 * Tracking device: Increased default MAX_ON_TIME to 1 hour
+
+## v0.3.1 (Current release - master branch)
+* Handheld controller: Added more configuration constants
