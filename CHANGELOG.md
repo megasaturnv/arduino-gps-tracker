@@ -26,5 +26,8 @@
 * Handheld controller: Added ablity to draw an arrow at the edge of the screen if the tracker is outside the map
 * Tracking device: Increased default MAX_ON_TIME to 1 hour
 
-## v0.3.1 (Current release)
+## v0.3.1
 * Handheld controller: Added more configuration constants
+
+## v0.3.2 (Current release)
+* Tracking device: Added KiCad circuit board files to "/gpsTracker_trackingDevice_circuitBoard/"
