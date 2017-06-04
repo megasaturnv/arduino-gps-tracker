@@ -1,10 +1,21 @@
-#define MAP_WIDTH_PX 128
-#define MAP_HEIGHT_PX 103
+#define MAP_WIDTH_PX 128 // Height of the map on the screen in pixels
+#define MAP_HEIGHT_PX 103 // Width of the map on the screen in pixels
 
-#define MAP_MIN_LAT  51.49933 //bottom of map
-#define MAP_MAX_LAT  51.50922 //top of map
-#define MAP_MIN_LONG -0.14816 //left of map
-#define MAP_MAX_LONG -0.12059 //right of map
+#define MAP_MIN_LAT  51.49933 // Bottom of map
+#define MAP_MAX_LAT  51.50922 // Top of map
+#define MAP_MIN_LONG -0.14816 // Left of map
+#define MAP_MAX_LONG -0.12059 // Right of map
+
+#define COLOUR_BACKGROUND QDTech_BLACK // Display background colour
+#define COLOUR_BITMAP QDTech_WHITE // Colour of the map
+#define COLOUR_TEXT QDTech_WHITE // Colour of the text
+#define COLOUR_MAP_BORDER QDTech_WHITE // The colour used for the line which separates the map from the text below
+#define COLOUR_LOCATION_CURRENT QDTech_RED // Colour of the pixel used to represent the current location on the map
+#define COLOUR_LOCATION_HISTORY QDTech_GREEN // The colour of the line showing location history
+
+#define TFT_ORIENTATION 0 // Orientation of TFT LCD 1.8" screen. 0 = Portrait, 1 = Landscape
+#define UART_SERIAL_BAUD 1200 // Baud rate of the UART serial port (used for debugging)
+#define SS_SERIAL_BAUD 1200 // Baud rate of the software serial port (used for wireless communication)
 
 #define PING_BUTTON 4
 #define REQUEST_GPS_ONCE_BUTTON 5
@@ -17,7 +28,7 @@
 #define mosi 11 // Don't change
 #define cs   10
 #define dc   A0
-#define rst  A1 // you can also connect this to the Arduino reset
+#define rst  A1 // You can also connect this to the Arduino reset
 
 #define _SS_MAX_RX_BUFF 128
 #define SOFTWARE_SERIAL_RX 3
@@ -31,7 +42,7 @@
 //Include the bitmap of the map. Location of the GPS tracker is drawn on the map
 #include "mapBitmap.h"
 
-SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); //for HC-12 wireless communication module.
+SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For HC-12 wireless communication module.
 
 Adafruit_QDTech tft = Adafruit_QDTech(cs, dc, rst);
 
@@ -42,7 +53,7 @@ void transmit(String datatype, String data) {
   tft.print(datatype + ":" + data);
   ss.print(datatype + ":" + data + "\n");
   delay(1000);
-  tft.fillRect(5 * 6, 13 * 8, 17 * 6, 1 * 8, QDTech_BLACK); //clear the transmitted text
+  tft.fillRect(5 * 6, 13 * 8, 17 * 6, 1 * 8, COLOUR_BACKGROUND); // Clear the transmitted text
 }
 
 void blinkLED() {
@@ -74,21 +85,21 @@ void setCursorLine(unsigned int lineX, unsigned int lineY) {
 }
 
 void clearTFTGPS() {
-  tft.fillRect(5 * 6, 15 * 8, 17 * 6, 2 * 8, QDTech_BLACK); //clear lat and long
-  tft.fillRect(5 * 6, 17 * 8, 6 * 6, 3 * 8, QDTech_BLACK); //clear bottom left values
-  tft.fillRect(16 * 6, 17 * 8, 6 * 6, 3 * 8, QDTech_BLACK); //clear bottom right values
+  tft.fillRect(5 * 6, 15 * 8, 17 * 6, 2 * 8, COLOUR_BACKGROUND); //clear lat and long
+  tft.fillRect(5 * 6, 17 * 8, 6 * 6, 3 * 8, COLOUR_BACKGROUND); //clear bottom left values
+  tft.fillRect(16 * 6, 17 * 8, 6 * 6, 3 * 8, COLOUR_BACKGROUND); //clear bottom right values
 }
 
 void clearTFTReceived() {
-  tft.fillRect(5 * 6, 14 * 8, 17 * 6, 1 * 8, QDTech_BLACK); //clear the received text
+  tft.fillRect(5 * 6, 14 * 8, 17 * 6, 1 * 8, COLOUR_BACKGROUND); //clear the received text
 }
 
 void clearTFTMap() {
-  tft.fillRect(0, 0, 128, 103, QDTech_BLACK); //clear the map drawn on the TFT screen
+  tft.fillRect(0, 0, 128, 103, COLOUR_BACKGROUND); //clear the map drawn on the TFT screen
 }
 
 void drawTFTMap() {
-  tft.drawXBitmap(0, 0, mapBitmap, MAP_WIDTH_PX, MAP_HEIGHT_PX, QDTech_WHITE); //Draw bitmap image
+  tft.drawXBitmap(0, 0, mapBitmap, MAP_WIDTH_PX, MAP_HEIGHT_PX, COLOUR_BITMAP); //Draw bitmap image
 }
 
 void drawArrow(byte screenX, byte screenY, byte dir) {
@@ -101,28 +112,28 @@ void drawArrow(byte screenX, byte screenY, byte dir) {
   switch (dir) {
     case 0: //NW
       //  fillTriangle(x0,      y0,      x1,          y1,          x2,          y2,          colour)
-      tft.fillTriangle(screenX, screenY, screenX + 2, screenY + 5, screenX + 5, screenY + 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY + 5, screenX + 5, screenY + 2, COLOUR_LOCATION_CURRENT);
       break;
     case 1: //N
-      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX + 2, screenY + 5, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX + 2, screenY + 5, COLOUR_LOCATION_CURRENT);
       break;
     case 2: //NE
-      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX - 5, screenY + 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY + 5, screenX - 5, screenY + 2, COLOUR_LOCATION_CURRENT);
       break;
     case 3: //E
-      tft.fillTriangle(screenX, screenY, screenX - 5, screenY - 2, screenX - 5, screenY + 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX - 5, screenY - 2, screenX - 5, screenY + 2, COLOUR_LOCATION_CURRENT);
       break;
     case 4: //SE
-      tft.fillTriangle(screenX, screenY, screenX - 2, screenY - 5, screenX - 5, screenY - 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX - 2, screenY - 5, screenX - 5, screenY - 2, COLOUR_LOCATION_CURRENT);
       break;
     case 5: //S
-      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX - 2, screenY - 5, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX - 2, screenY - 5, COLOUR_LOCATION_CURRENT);
       break;
     case 6: //SW
-      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX + 5, screenY - 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX + 2, screenY - 5, screenX + 5, screenY - 2, COLOUR_LOCATION_CURRENT);
       break;
     case 7: //W
-      tft.fillTriangle(screenX, screenY, screenX + 5, screenY + 2, screenX + 5, screenY - 2, QDTech_RED);
+      tft.fillTriangle(screenX, screenY, screenX + 5, screenY + 2, screenX + 5, screenY - 2, COLOUR_LOCATION_CURRENT);
       break;
   }
 }
@@ -150,24 +161,24 @@ void displayLocationOnMap(float currentLatitude, float currentLongitude) {
   //if tracker is on-screen
   if (relativeXPosOnMap >= 0 && relativeXPosOnMap <= 1 && relativeYPosOnMap >= 0 && relativeYPosOnMap <= 1) {
     //Draw pixel on map at previous coordinates for plot of location history
-    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], QDTech_BLACK); //Clear the pixel first
-    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], QDTech_GREEN);
+    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], COLOUR_BACKGROUND); //Clear the pixel first
+    tft.drawPixel(previousCoordinates[0], previousCoordinates[1], COLOUR_LOCATION_HISTORY);
 
     //Draw pixel on map at current location
-    tft.drawPixel(screenXPos, screenYPos, QDTech_BLACK); //Clear the pixel first
-    tft.drawPixel(screenXPos, screenYPos, QDTech_RED);
+    tft.drawPixel(screenXPos, screenYPos, COLOUR_BACKGROUND); //Clear the pixel first
+    tft.drawPixel(screenXPos, screenYPos, COLOUR_LOCATION_CURRENT);
 
     //Uncomment to draw a '+' of pixels around location (May break line on graph showing tracker's location history)
-    //tft.drawPixel(screenXPos + 1, screenYPos    , QDTech_RED);
-    //tft.drawPixel(screenXPos - 1, screenYPos    , QDTech_RED);
-    //tft.drawPixel(screenXPos    , screenYPos + 1, QDTech_RED);
-    //tft.drawPixel(screenXPos    , screenYPos - 1, QDTech_RED);
+    //tft.drawPixel(screenXPos + 1, screenYPos    , COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos - 1, screenYPos    , COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos    , screenYPos + 1, COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos    , screenYPos - 1, COLOUR_LOCATION_CURRENT);
 
     //Uncomment to draw a 'x' of pixels around location (May break line on graph showing tracker's location history)
-    //tft.drawPixel(screenXPos-1, screenYPos-1, QDTech_RED);
-    //tft.drawPixel(screenXPos-1, screenYPos+1, QDTech_RED);
-    //tft.drawPixel(screenXPos+1, screenYPos+1, QDTech_RED);
-    //tft.drawPixel(screenXPos+1, screenYPos-1, QDTech_RED);
+    //tft.drawPixel(screenXPos-1, screenYPos-1, COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos-1, screenYPos+1, COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos+1, screenYPos+1, COLOUR_LOCATION_CURRENT);
+    //tft.drawPixel(screenXPos+1, screenYPos-1, COLOUR_LOCATION_CURRENT);
 
     //Set previousCoordinates to current location for next time
     previousCoordinates[0] = screenXPos;
@@ -214,20 +225,20 @@ void setup() {
   pinMode(REQUEST_GPS_STOP_BUTTON, INPUT_PULLUP);
   pinMode(REDRAW_MAP_BUTTON, INPUT_PULLUP);
 
-  //Serial.begin(1200); //For debugging
-  ss.begin(1200); //For HC-12 wireless communication module
+  //Serial.begin(UART_SERIAL_BAUD); //For debugging
+  ss.begin(SS_SERIAL_BAUD); //For HC-12 wireless communication module
 
   tft.init();
-  tft.setRotation(0);  // 0 = Portrait, 1 = Landscape
-  tft.fillScreen(QDTech_BLACK);
+  tft.setRotation(TFT_ORIENTATION);
+  tft.fillScreen(COLOUR_BACKGROUND);
   tft.setTextWrap(false);
   tft.setCursor(0, 0);
-  tft.setTextColor(QDTech_WHITE);
+  tft.setTextColor(COLOUR_TEXT);
   tft.setTextSize(1);
 
   //DRAW BITMAP IMAGE AND PRINT VALUE TITLES
   drawTFTMap();
-  tft.drawFastHLine(0, 103, 128, QDTech_WHITE); //Note: draw on line 103, which is the 104th line
+  tft.drawFastHLine(0, 103, 128, COLOUR_MAP_BORDER); //Note: draw on line 103, which is the 104th line
   setCursorLine(0, 13); //Print titles for values
   tft.println("Sent:");
   tft.println("Rcvd:");
