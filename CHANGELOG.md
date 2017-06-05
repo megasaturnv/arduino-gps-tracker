@@ -32,7 +32,11 @@
 ## v0.3.2
 * Tracking device: Added KiCad circuit board files to "/gpsTracker_trackingDevice_circuitBoard/"
 
-## v0.3.3 (Current release)
+## v0.3.3
 * Tracking device: Added more configuration constants
 * Tracking device: Fixed bug where Arduino should stay awake to report continuous GPS data but would instead sleep if any message was received on the UART serial buffer
 * Tracking device: Added more code comments
+
+## v0.3.4 (Current release)
+* Tracking device: Added ability for Arduino to control the GPS's power through pin 4. An N-channel MOSFET is required. See circuit diagram in gpsTracker_trackingDevice_circuitBoard/
+* Tracking device: Updated OutputPowerSavingPins[] array to reflect changes
