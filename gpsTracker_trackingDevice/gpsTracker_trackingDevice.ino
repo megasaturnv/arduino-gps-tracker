@@ -11,6 +11,7 @@
 #define GPS_DATA_TRANSMIT_FREQUENCY 15000 //How often data is transmitted to the handhelf controller when gpsRequestMode == 2 (Continuous GPS data transmission)
 #define SOFTWARE_SERIAL_RX 3 // Software serial RX pin, to be connected to the GPS module's TX
 #define SOFTWARE_SERIAL_TX 2 // Software serial TX pin, to be connected to the GPS module's RX
+#define GPS_POWER_PIN 4
 
 TinyGPS gps;
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
@@ -19,7 +20,7 @@ SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
 // ###############################################################
 // #### YOU MUST UPDATE THIS LIST IF ANY PIN CHANGES ARE MADE ####
 // ###############################################################
-const byte OutputPowerSavingPins[] = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+const byte OutputPowerSavingPins[] = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 unsigned long startMillis, targetTime;
 
@@ -61,8 +62,9 @@ void ArduinoSleep() {
 
   requestSleep = false;
   gpsRequestMode = 0;
-
   ss.end(); // Stop software serial (it was waking up the arduino for some reason
+  digitalWrite(GPS_POWER_PIN, LOW); // Turn off GPS module
+
   transmit("message", "sleeping");
   delay(2000); // TEMP gives extra time for message to exit serial buffer
 
@@ -88,13 +90,19 @@ void ArduinoSleep() {
 
   power_all_enable();
 
+  digitalWrite(GPS_POWER_PIN, HIGH); // Turn on GPS module
+  delay(500); // Give GPS module half a second to turn on
   ss.begin(SS_SERIAL_BAUD); // Begin software serial for GPS module communication
   startMillis = millis();
 }
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT); // Setup pin 13 (Arduino's LED pin)
   digitalWrite(LED_BUILTIN, HIGH);
+
+  pinMode(GPS_POWER_PIN, OUTPUT); // Setup pin which controls GPS power through an N-channel MOSFET
+  digitalWrite(GPS_POWER_PIN, HIGH);
+  delay(500); // Give GPS module half a second to turn on
 
   Serial.begin(UART_SERIAL_BAUD); // HC-12 module on Arduino serial port. Incoming data here will wake up the arduino.
   ss.begin(SS_SERIAL_BAUD);     // GPS module on Arduino ss port (software serial)
