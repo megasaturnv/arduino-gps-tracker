@@ -1,7 +1,7 @@
 # arduino-gps-tracker changelog
 ## v0.1
 * Initial release
-* Handheld controller: Added the handheld controller under "gpsTracker_handheldController". It can displays sent messages, received messages, latitude, longitude, number of satellites, accuracy, speed, direction, age of data and the checksum value.
+* Handheld controller: Added the handheld controller under "gpsTracker_handheldController". It can display sent messages, received messages, latitude, longitude, number of satellites, accuracy, speed, direction, age of data and the checksum value.
 * Handheld controller: Added map to TFT LCD screen. Map is not yet functional.
 * Tracking device: Added the GPS tracker under "gpsTracker_trackingDevice". It can get GPS coordinates and transmit them when requested.
 * Tracking device: Added code so the Arduino can go into a light sleep and wake up when serial data in the buffer. Sleep occurs after the Arduino has finished its task, couldn't receive coordinates before GPS_TIMEOUT milliseconds or, as a failsafe, the Arduino will sleep if it has been on for more than MAX_ON_TIME milliseconds as long as it hasn't received any messages from the handheld controller during this time.
@@ -23,11 +23,16 @@
 * Handheld controller: Changed the way location is drawn on the map (from 5 pixels in a '+' shape to a single pixel)
 * Handheld controller: Added functionality to draw a green line to represent the tracker's location history
 * Handheld controller test code: Added test code for drawing arrows on the screen
-* Handheld controller: Added ablity to draw an arrow at the edge of the screen if the tracker is outside the map
+* Handheld controller: Added ability to draw an arrow at the edge of the screen if the tracker is outside the map
 * Tracking device: Increased default MAX_ON_TIME to 1 hour
 
 ## v0.3.1
-* Handheld controller: Added more configuration constants
+* Handheld controller: Added more constants under #define, for custom configurations
 
-## v0.3.2 (Current release)
+## v0.3.2
 * Tracking device: Added KiCad circuit board files to "/gpsTracker_trackingDevice_circuitBoard/"
+
+## v0.3.3 (Current release)
+* Tracking device: Added more configuration constants
+* Tracking device: Fixed bug where Arduino should stay awake to report continuous GPS data but would instead sleep if any message was received on the UART serial buffer
+* Tracking device: Added more code comments
