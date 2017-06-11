@@ -16,8 +16,9 @@
 #define TFT_ORIENTATION 0 // Orientation of TFT LCD 1.8" screen. 0 = Portrait, 1 = Landscape
 #define UART_SERIAL_BAUD 1200 // Baud rate of the UART serial port (used for debugging)
 #define SS_SERIAL_BAUD 1200 // Baud rate of the software serial port (used for wireless communication)
+#define HCV_READVCC_INTERVAL 30000 // Handheld controller readVcc() interval in ms
 
-#define PING_BUTTON 4
+#define CELLVOLTS_BUTTON 4
 #define REQUEST_GPS_ONCE_BUTTON 5
 #define REQUEST_GPS_CONTINUOUS_BUTTON 6
 #define REQUEST_GPS_STOP_BUTTON 7
@@ -47,13 +48,14 @@ SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For HC-12 wireless
 Adafruit_QDTech tft = Adafruit_QDTech(cs, dc, rst);
 
 int previousCoordinates[] = { -1, -1};
+unsigned long printHCVTargetTime;
 
 void transmit(String datatype, String data) {
   setCursorLine(5, 13);
   tft.print(datatype + ":" + data);
   ss.print(datatype + ":" + data + "\n");
   delay(1000);
-  tft.fillRect(5 * 6, 13 * 8, 17 * 6, 1 * 8, COLOUR_BACKGROUND); // Clear the transmitted text
+  clearTFTTransmitted();
 }
 
 void blinkLED() {
@@ -85,13 +87,26 @@ void setCursorLine(unsigned int lineX, unsigned int lineY) {
 }
 
 void clearTFTGPS() {
+  //  fillRect(x0,    y0,     w,      h,     colour)
   tft.fillRect(5 * 6, 15 * 8, 17 * 6, 2 * 8, COLOUR_BACKGROUND); //clear lat and long
-  tft.fillRect(5 * 6, 17 * 8, 6 * 6, 3 * 8, COLOUR_BACKGROUND); //clear bottom left values
-  tft.fillRect(16 * 6, 17 * 8, 6 * 6, 3 * 8, COLOUR_BACKGROUND); //clear bottom right values
+  tft.fillRect(5 * 6, 17 * 8, 6 * 6, 2 * 8, COLOUR_BACKGROUND); //clear bottom left values, except the bottom row - which is for cell voltage
+  tft.fillRect(15 * 6, 17 * 8, 7 * 6, 2 * 8, COLOUR_BACKGROUND); //clear bottom right values, except the bottom row - which is for cell voltage
+}
+
+void clearTFT_HCV() { // Clear handheld controller voltage
+  tft.fillRect(5 * 6, 19 * 8, 6 * 6, 1 * 8, COLOUR_BACKGROUND); //clear HCV value (handheld controller voltage)
+}
+
+void clearTFT_TDV() { // Clear tracking device voltage
+  tft.fillRect(15 * 6, 19 * 8, 7 * 6, 1 * 8, COLOUR_BACKGROUND); //clear TDV value (tracking device voltage)
 }
 
 void clearTFTReceived() {
   tft.fillRect(5 * 6, 14 * 8, 17 * 6, 1 * 8, COLOUR_BACKGROUND); //clear the received text
+}
+
+void clearTFTTransmitted() {
+  tft.fillRect(5 * 6, 13 * 8, 17 * 6, 1 * 8, COLOUR_BACKGROUND); // Clear the transmitted text
 }
 
 void clearTFTMap() {
@@ -183,7 +198,7 @@ void displayLocationOnMap(float currentLatitude, float currentLongitude) {
     //Set previousCoordinates to current location for next time
     previousCoordinates[0] = screenXPos;
     previousCoordinates[1] = screenYPos;
-    
+
     ////if tracker is off-screen////
     ////corners of map. i.e. position is completely outside the map's boundaries
     //if tracker is top-left
@@ -215,11 +230,31 @@ void displayLocationOnMap(float currentLatitude, float currentLongitude) {
   }
 }
 
+long readVcc() {
+  // Function to read Arduino's Vcc voltage.
+  // Inspiration taken from https://code.google.com/archive/p/tinkerit/wikis/SecretVoltmeter.wiki
+  // For ATMEGA168 and ATMEGA328 where the internal reference voltage is 1.1 volts. i.e Arduino Uno, nano and Pro Mini should work fine
+  // Internal reference voltage for the ATMEGA8 is 2.56 volts, so it should be easy to modify this code for the ATMEGA8
+  // The Arduino Mega has two internal voltage references at 1.1v and 2.56v. There's a chance this code could changed to work with the Arduino Mega
+  // The voltage is returned in millivolts. So 5000 is 5V, 3300 is 3.3V
+
+  long result;
+  // Read 1.1V reference against AVcc
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(2); // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC); // Convert
+  while (bit_is_set(ADCSRA, ADSC));
+  result = ADCL;
+  result |= ADCH << 8;
+  result = 1126400L / result; // Back-calculate AVcc in mV
+  return result;
+}
+
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
 
-  pinMode(PING_BUTTON, INPUT_PULLUP);
+  pinMode(CELLVOLTS_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_ONCE_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_CONTINUOUS_BUTTON, INPUT_PULLUP);
   pinMode(REQUEST_GPS_STOP_BUTTON, INPUT_PULLUP);
@@ -250,16 +285,25 @@ void setup() {
   tft.print("Sped:");
   setCursorLine(11, 18);
   tft.println("Dir:");
-  tft.print("Age:");
+  //  tft.print("Age:");
+  //  setCursorLine(11, 19);
+  //  tft.print("Chck:");
+  tft.print("HCV:");
   setCursorLine(11, 19);
-  tft.print("Chck:");
+  tft.print("TDV:");
 
   digitalWrite(LED_PIN, LOW);
 }
 
 void loop() {
-  if (digitalReadDebounce(PING_BUTTON)) {
-    transmit("ping", "handheldsend");
+  if (printHCVTargetTime < millis()) {
+    clearTFT_HCV(); // Clear any old tracking device voltage values
+    setCursorLine(5, 19); // Move cursor
+    tft.print(String(readVcc()) + "mV"); // Print voltage in mV
+    printHCVTargetTime = millis() + HCV_READVCC_INTERVAL;
+  }
+  if (digitalReadDebounce(CELLVOLTS_BUTTON)) {
+    transmit("cell", "volts");
   }
   if (digitalReadDebounce(REQUEST_GPS_ONCE_BUTTON)) {
     transmit("gps", "once");
@@ -338,12 +382,10 @@ void loop() {
       //  Serial.println(",");
       //}
       //// PROCESSING 'datatype' AND 'datacsvarray' ////
-      if (datatype == "ping") {
-        if (datacsvarray[0] == "trackersend") {
-          transmit("message", "handheldreceived");
-        } else {
-          transmit("message", "ping invalid");
-        }
+      if (datatype == "cell") {
+        clearTFT_TDV(); // Clear any old tracking device voltage values
+        setCursorLine(15, 19); // Move cursor
+        tft.print(datacsvarray[0]); // Print voltage in mV
       } else if (datatype == "gps") {
         //data = "latitude,longitude,num of satellites,accuracy,speed,direction,age of data,checksum"
         clearTFTGPS();
@@ -354,16 +396,16 @@ void loop() {
         tft.print(datacsvarray[1]); //longitude
         setCursorLine(5, 17);
         tft.print(datacsvarray[2]); //num of satellites
-        setCursorLine(16, 17);
+        setCursorLine(15, 17);
         tft.print(datacsvarray[3]); //accuracy
         setCursorLine(5, 18);
         tft.print(datacsvarray[4]); //speed
-        setCursorLine(16, 18);
+        setCursorLine(15, 18);
         tft.print(datacsvarray[5]); //direction
-        setCursorLine(5, 19);
-        tft.print(datacsvarray[6]); //age of data
-        setCursorLine(16, 19);
-        tft.print(datacsvarray[7]); //checksum
+        //setCursorLine(5, 19);
+        //tft.print(datacsvarray[6]); //age of data
+        //setCursorLine(15, 19);
+        //tft.print(datacsvarray[7]); //checksum
 
         if (commacount != 7) { // If incorrect number of commas received, show it in bottom right corner of screen
           setCursorLine(20, 19);

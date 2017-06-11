@@ -8,7 +8,7 @@
 #define SS_SERIAL_BAUD 9600 // Baud rate of the software serial port (used for GPS module communication)
 #define GPS_TIMEOUT 0 // Amount of time in ms until the Arduino gives up trying to receive a GPS signal. Set to 0 to disable timeout
 #define MAX_ON_TIME 3600000 // Failsafe maximum on-time in ms for the Arduino. MAX_ON_TIME will reset when awaking or if the arduino receives data in its serial buffer. Set to 0 to disable failsafe sleep
-#define GPS_DATA_TRANSMIT_FREQUENCY 15000 //How often data is transmitted to the handhelf controller when gpsRequestMode == 2 (Continuous GPS data transmission)
+#define GPS_DATA_TRANSMIT_INTERVAL 15000 //How often data is transmitted to the handhelf controller when gpsRequestMode == 2 (Continuous GPS data transmission)
 #define SOFTWARE_SERIAL_RX 3 // Software serial RX pin, to be connected to the GPS module's TX
 #define SOFTWARE_SERIAL_TX 2 // Software serial TX pin, to be connected to the GPS module's RX
 #define GPS_POWER_PIN 4
@@ -16,10 +16,11 @@
 TinyGPS gps;
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
 
-// Unused pins that should be set as outputs (to save power). DO NOT plug anything into these pins.
-// ###############################################################
-// #### YOU MUST UPDATE THIS LIST IF ANY PIN CHANGES ARE MADE ####
-// ###############################################################
+// Unused pins that should be set as outputs (this slightly reduces the amount of power used by the Arduino).
+// Pin 14 = A0, 15 = A2 etc to 19=A5. DO NOT plug anything into these pins.
+// ################################################################
+// #### YOU MUST UPDATE THIS ARRAY IF ANY PIN CHANGES ARE MADE ####
+// ################################################################
 const byte OutputPowerSavingPins[] = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 unsigned long startMillis, targetTime;
@@ -29,7 +30,7 @@ byte gpsRequestMode = 0;
 // The meanings of gpsRequestMode is listed below
 // 0 = handheld is not requesting GPS data. Arduino should go into sleep mode
 // 1 = handheld is requesting GPS data to be transmitted once. Arduino will then set gpsRequestMode to 0 and sleep
-// 2 = handheld is requesting continous transmission of GPS data
+// 2 = handheld is requesting continuous transmission of GPS data
 
 void blinkLED() {
   digitalWrite(LED_BUILTIN, HIGH);
@@ -60,8 +61,8 @@ void transmit(String datatype, String data) {
 void ArduinoSleep() {
   // Based on code from http://playground.arduino.cc/Learning/ArduinoSleepCode and http://rubenlaguna.com/wp/2008/10/15/arduino-sleep-mode-waking-up-when-receiving-data-on-the-usart/
 
-  requestSleep = false;
-  gpsRequestMode = 0;
+  gpsRequestMode = 0; // Make sure gpsRequestMode is 0 so it sleeps if the arduino is woken by an invalid serial message
+  requestSleep = false; // Set requestSleep to false so the Arduino doesn't try to sleep again
   ss.end(); // Stop software serial (it was waking up the arduino for some reason
   digitalWrite(GPS_POWER_PIN, LOW); // Turn off GPS module
 
@@ -84,6 +85,7 @@ void ArduinoSleep() {
   sleep_mode(); // Here the device is actually put to sleep!!
 
   // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+
   sleep_disable(); // First thing after waking from sleep: disable sleep...
 
   PRR = PRR & 0b00000000; // Re-enable the 8-bit timer. The PRR refers to the Power Reduction Register.
@@ -93,7 +95,27 @@ void ArduinoSleep() {
   digitalWrite(GPS_POWER_PIN, HIGH); // Turn on GPS module
   delay(500); // Give GPS module half a second to turn on
   ss.begin(SS_SERIAL_BAUD); // Begin software serial for GPS module communication
-  startMillis = millis();
+  startMillis = millis(); // Record startMillis
+}
+
+long readVcc() {
+  // Function to read Arduino's Vcc voltage.
+  // Inspiration taken from https://code.google.com/archive/p/tinkerit/wikis/SecretVoltmeter.wiki
+  // For ATMEGA168 and ATMEGA328 where the internal reference voltage is 1.1 volts. i.e Arduino Uno, nano and Pro Mini should work fine
+  // Internal reference voltage for the ATMEGA8 is 2.56 volts, so it should be easy to modify this code for the ATMEGA8
+  // The Arduino Mega has two internal voltage references at 1.1v and 2.56v. There's a chance this code could changed to work with the Arduino Mega
+  // The voltage is returned in millivolts. So 5000 is 5V, 3300 is 3.3V
+
+  long result;
+  // Read 1.1V reference against AVcc
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(2); // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC); // Convert
+  while (bit_is_set(ADCSRA, ADSC));
+  result = ADCL;
+  result |= ADCH << 8;
+  result = 1126400L / result; // Back-calculate AVcc in mV
+  return result;
 }
 
 void setup() {
@@ -101,8 +123,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
 
   pinMode(GPS_POWER_PIN, OUTPUT); // Setup pin which controls GPS power through an N-channel MOSFET
-  digitalWrite(GPS_POWER_PIN, HIGH);
-  delay(500); // Give GPS module half a second to turn on
+  digitalWrite(GPS_POWER_PIN, LOW);
 
   Serial.begin(UART_SERIAL_BAUD); // HC-12 module on Arduino serial port. Incoming data here will wake up the arduino.
   ss.begin(SS_SERIAL_BAUD);     // GPS module on Arduino ss port (software serial)
@@ -169,22 +190,18 @@ void loop() {
       }
 
       //// PROCESSING 'datatype' AND 'datacsvarray' ////
-      if (datatype == "ping") {
-        if (datacsvarray[0] == "handheldsend") {
-          transmit("message", "trackerreceived");
-        } else {
-          transmit("message", "ping invalid");
+      if (datatype == "cell") {
+        if (datacsvarray[0] == "volts") {
+          transmit("cell", String(readVcc()) + "mV");
         }
       } else if (datatype == "gps") {
         // data = "latitude,longitude,num of satellites,accuracy,speed,direction,age of data,checksum"
         if (datacsvarray[0] == "once") {
           transmit("message", "rcvd gps once");
           gpsRequestMode = 1;
-          requestSleep = false;
         } else if (datacsvarray[0] == "continuous") {
           transmit("message", "rcvd continuous");
           gpsRequestMode = 2;
-          requestSleep = false;
         } else if (datacsvarray[0] == "stopcontinuous") {
           transmit("message", "rcvd gps stop");
           gpsRequestMode = 0;
@@ -192,24 +209,24 @@ void loop() {
         targetTime = millis() + GPS_TIMEOUT;
       } else {
         //transmit("message", "datatype invalid");
-        delay(100); //Do nothing
+        delay(100); // Do nothing
       }
     } else {
       //transmit("message", "empty data/dtype"); // Nothing on one side of colon character
-      delay(100); //Do nothing
+      delay(100); // Do nothing
     }
     delay(200);
     digitalWrite(LED_BUILTIN, LOW);
   }
 
-
-  if (gpsRequestMode == 0) { // gpsRequestMode is set to 0 just before the arduino sleeps, so the default action is to sleep
+  if (gpsRequestMode == 0) { // gpsRequestMode will be zero after waking up or if gps:stopcontinuous is received. gpsRequestMode is also 0 if gps:stopcontinuous is received
     requestSleep = true; // Request sleep
   } else {
-    if (targetTime > millis() || GPS_TIMEOUT == 0) {
+    requestSleep = false; //Set requestSleep to false, just to be sure
+    if (targetTime > millis() || GPS_TIMEOUT == 0) { // Only run if targetTime > millis() or GPS_TIMEOUT == 0
       bool newData = false;
-      // For GPS_DATA_TRANSMIT_FREQUENCY milliseconds we parse GPS data and report some key values
-      for (unsigned long start = millis(); millis() - start < GPS_DATA_TRANSMIT_FREQUENCY;) {
+      // For GPS_DATA_TRANSMIT_INTERVAL milliseconds we parse GPS data and report some key values
+      for (unsigned long start = millis(); millis() - start < GPS_DATA_TRANSMIT_INTERVAL;) {
         while (ss.available()) {
           char c = ss.read();
           //Serial.write(c); // Uncomment this line if you want to see the GPS data flowing
@@ -250,11 +267,11 @@ void loop() {
                  String(failed)
                 );
 
-        if (gpsRequestMode == 1) { // GPS request mode is set to 1
+        if (gpsRequestMode != 2) { // if GPS request mode is not equal to 2. I.e. if gpsRequestMode is 1 (In all cases for this code). If statement is written like this so Arduino will sleep even if gpsRequestMode is set to an invalid number
           gpsRequestMode = 0; // Set gpsRequestMode to 0, which will loop around and then request sleep
         }
       }
-    } else { // if Arduino can't get a GPS location after GPS_TIMEOUT ms
+    } else { // If Arduino can't get a GPS location after GPS_TIMEOUT ms ( targetTime < millis() )
       transmit("message", "Timeout no GPS"); // Tell the handheld we cannot get a GPS location
       gpsRequestMode = 0; // Stop requesting GPS data. Program will loop around and do requestSleep = true.
     }
@@ -267,6 +284,6 @@ void loop() {
     // However, setting it manually in this case to make sure the Arduino turns off after the MAX_ON_TIME to save power
   }
   if (requestSleep == true) {
-    ArduinoSleep();
+    ArduinoSleep(); // Put the arduino into a light sleep, where it can still receive serial data on the UART port and store it in the serial buffer
   }
 }
