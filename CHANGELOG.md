@@ -53,4 +53,6 @@
 * Handheld controller: Added code so the handheld controller can request and display the Vcc voltage of the GPS tracking device
 * Handheld controller: Also added readVcc() function which allows the Arduino to read its own Vcc input voltage
 * Handheld controller: Added code so the handheld controller reads its own Vcc input voltage every HCV_READVCC_INTERVAL in milliseconds and displays value on TFT screen. default HCV_READVCC_INTERVAL is 30000 ms
-* Tracking device: Renamed GPS_DATA_TRANSMIT_FREQUENCY to GPS_DATA_TRANSMIT_INTERVAL
+* Handheld controller: Removed unused functions
+* Tracking device: Renamed GPS_DATA_TRANSMIT_FREQUENCY to GPS_DATA_TRANSMIT_INTERVAL for clarity
+* Tracking device: Removed unused functions
