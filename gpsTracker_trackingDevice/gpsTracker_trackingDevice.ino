@@ -32,27 +32,6 @@ byte gpsRequestMode = 0;
 // 1 = handheld is requesting GPS data to be transmitted once. Arduino will then set gpsRequestMode to 0 and sleep
 // 2 = handheld is requesting continuous transmission of GPS data
 
-void blinkLED() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(50);
-  digitalWrite(LED_BUILTIN, LOW);
-}
-
-bool digitalReadDebounce(int pin) {
-  if (digitalRead(pin) == LOW) {
-    delay(50);
-    bool debounceRunning = true;
-    while (debounceRunning) {
-      if (digitalRead(pin) == HIGH) {
-        debounceRunning = false;
-      }
-    }
-    delay(50);
-    return true;
-  }
-  return false;
-}
-
 void transmit(String datatype, String data) {
   Serial.print(datatype + ":" + data + "\n");
   delay(1000); //TEMP - testing
