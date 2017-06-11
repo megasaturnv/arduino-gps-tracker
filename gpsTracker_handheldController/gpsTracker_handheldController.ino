@@ -58,13 +58,7 @@ void transmit(String datatype, String data) {
   clearTFTTransmitted();
 }
 
-void blinkLED() {
-  digitalWrite(LED_PIN, HIGH);
-  delay(50);
-  digitalWrite(LED_PIN, LOW);
-}
-
-bool digitalReadDebounce(int pin) {
+bool digitalReadDebounce(int pin) { //Digital read a pin with software debounce
   if (digitalRead(pin) == LOW) {
     delay(50);
     bool debounceRunning = true;
