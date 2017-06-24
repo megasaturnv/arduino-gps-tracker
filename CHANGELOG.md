@@ -41,7 +41,7 @@
 * Tracking device: Added ability for Arduino to control the GPS's power through pin 4. An N-channel MOSFET is required. See circuit diagram in gpsTracker_trackingDevice_circuitBoard/
 * Tracking device: Updated OutputPowerSavingPins[] array to reflect changes
 
-## v0.4 (Current release)
+## v0.4
 * Tracking device: Added readVcc() function which allows the Arduino to read its own Vcc input voltage. This will allow the user to know the charge state of the Li-ion cell(s)
 * Tracking device: Tracking device will return cell charge in mV as: "cell:0000mV" when it receives "cell:volts"
 * Tracking device: Removed "ping" message recognition code
@@ -56,3 +56,7 @@
 * Handheld controller: Removed unused functions
 * Tracking device: Renamed GPS_DATA_TRANSMIT_FREQUENCY to GPS_DATA_TRANSMIT_INTERVAL for clarity
 * Tracking device: Removed unused functions
+
+## v0.4.1 (Current release)
+* Handheld controller: Renamed files and folders to remove "gpsTracker_..."
+* Tracking device: Renamed files and folders to remove "gpsTracker_..."
