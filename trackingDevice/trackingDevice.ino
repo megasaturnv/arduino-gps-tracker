@@ -181,7 +181,7 @@ void loop() {
         } else if (datacsvarray[0] == "continuous") {
           transmit("message", "rcvd continuous");
           gpsRequestMode = 2;
-        } else if (datacsvarray[0] == "stopcontinuous") {
+        } else if (datacsvarray[0] == "stop") {
           transmit("message", "rcvd gps stop");
           gpsRequestMode = 0;
         }
@@ -198,7 +198,7 @@ void loop() {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
-  if (gpsRequestMode == 0) { // gpsRequestMode will be zero after waking up or if gps:stopcontinuous is received. gpsRequestMode is also 0 if gps:stopcontinuous is received
+  if (gpsRequestMode == 0) { // gpsRequestMode will be 0 after waking up or if gps:stop is received
     requestSleep = true; // Request sleep
   } else {
     requestSleep = false; //Set requestSleep to false, just to be sure
