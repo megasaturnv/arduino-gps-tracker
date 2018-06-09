@@ -55,10 +55,16 @@ If the tracking device is requested for coordinates, it will try and get its GPS
 If no more GPS coordinates are required (after a successful GPS lock with "gps:once" or "gps:stopcontinuous" commmand) or if the Arduino has been on for more than MAX_ON_TIME, go to sleep. MAX_ON_TIME is a failsafe to make sure the Arduino doesn't stay on for more than MAX_ON_TIME milliseconds. This functionality can be disabled by setting MAX_ON_TIME to 0 (#define MAX_ON_TIME 0).
 
 ### The Arduino pins used to connect to peripherals is shown below:
+
+Pin description | Pin no. | Function
+--- | --- | ---
+SERIAL_UART_RX | 0 | For the HC-12 module. Connects to HC-12 TX
+SERIAL_UART_TX | 1 | For the HC-12 module. Connects to HC-12 RX
+
 #define name | Pin no. | Function
 --- | --- | ---
-SOFTWARE_SERIAL_TX | 2 | For the HC-12 module. Connects to HC-12 RX
-SOFTWARE_SERIAL_RX | 3 | For the HC-12 module. Connects to HC-12 TX
+SOFTWARE_SERIAL_RX | 3 | Software serial RX pin, to be connected to the GPS module's TX
+SOFTWARE_SERIAL_TX | 2 | Software serial TX pin, to be connected to the GPS module's RX
 
 ## Motivation
 I have created this project to be used as a dog tracker, but it can easily track a car and other valuable item.
