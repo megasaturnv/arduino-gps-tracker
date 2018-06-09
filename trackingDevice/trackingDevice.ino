@@ -8,7 +8,7 @@
 #define SS_SERIAL_BAUD 9600 // Baud rate of the software serial port (used for GPS module communication)
 #define GPS_TIMEOUT 0 // Amount of time in ms until the Arduino gives up trying to receive a GPS signal. Set to 0 to disable timeout
 #define MAX_ON_TIME 3600000 // Failsafe maximum on-time in ms for the Arduino. MAX_ON_TIME will reset when awaking or if the arduino receives data in its serial buffer. Set to 0 to disable failsafe sleep
-#define GPS_DATA_TRANSMIT_INTERVAL 15000 //How often data is transmitted to the handhelf controller when gpsRequestMode == 2 (Continuous GPS data transmission)
+#define GPS_DATA_TRANSMIT_INTERVAL 15000 //How often data is transmitted to the handheld controller when gpsRequestMode == 2 (Continuous GPS data transmission)
 #define SOFTWARE_SERIAL_RX 3 // Software serial RX pin, to be connected to the GPS module's TX
 #define SOFTWARE_SERIAL_TX 2 // Software serial TX pin, to be connected to the GPS module's RX
 #define GPS_POWER_PIN 4
