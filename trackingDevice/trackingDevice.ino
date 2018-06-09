@@ -11,7 +11,7 @@
 #define GPS_DATA_TRANSMIT_INTERVAL 15000 //How often data is transmitted to the handheld controller when gpsRequestMode == 2 (Continuous GPS data transmission)
 #define SOFTWARE_SERIAL_RX 3 // Software serial RX pin, to be connected to the GPS module's TX
 #define SOFTWARE_SERIAL_TX 2 // Software serial TX pin, to be connected to the GPS module's RX
-#define GPS_POWER_PIN 4
+#define GPS_POWER_PIN 4 // Control power to the GPS module via a transistor
 
 TinyGPS gps;
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
@@ -101,7 +101,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT); // Setup pin 13 (Arduino's LED pin)
   digitalWrite(LED_BUILTIN, HIGH);
 
-  pinMode(GPS_POWER_PIN, OUTPUT); // Setup pin which controls GPS power through an N-channel MOSFET
+  pinMode(GPS_POWER_PIN, OUTPUT); // Setup pin which controls GPS power via a transistor
   digitalWrite(GPS_POWER_PIN, LOW);
 
   Serial.begin(UART_SERIAL_BAUD); // HC-12 module on Arduino serial port. Incoming data here will wake up the arduino.
