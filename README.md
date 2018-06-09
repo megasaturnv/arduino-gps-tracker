@@ -5,11 +5,11 @@ An Arduino-based GPS tracking solution. One Arduino and Ublox Neo-6m (GY-NEO6MV2
 ## Description of Arduino handheld controller
 The Arduino handheld controller is used by a user to find the location of their GPS tracking device. It is powered by an 18650 Li-ion cell and consists of Li-ion protection and charging circuitry, an Arduino, a 1.8" TFT LCD display, a HC-12 wireless communication module and buttons for requesting various data from the tracking device. When it receives data from the tracking device, the Arduino will interpret the message formtted as \<datatype>:\<CSV of data> into \<data type> and an array of data for each item in \<CSV of data>. Then, the tracker respond in the appropriate way. The messages it understands and the way it responds are listed below:
 
-#### if receive "ping:trackersend"
-send "ping:handheldreceived"
+#### if receive "volts:\[millivolts\]"
+Display the tracking device Arduino's VCC voltage on the 1.8" TFT LCD display.
 
 #### if receive "gps:\<latitude>, \<longitude>, \<num of satellites>, \<accuracy>, \<speed>, \<direction>, \<age of data>, \<checksum>"
-Display these figures on the 1.8" TFT LCD display
+Display these figures on the 1.8" TFT LCD display.
 
 ### Buttons
 The buttons on the handheld controller are pulled high by the Arduino's internal pull-up resistors. To activate the button, the pin should be connected to ground. 
@@ -19,7 +19,7 @@ The buttons on the handheld controller are pulled high by the Arduino's internal
 --- | --- | ---
 SOFTWARE_SERIAL_TX | 2 | For the HC-12 module. Connects to HC-12 RX
 SOFTWARE_SERIAL_RX | 3 | For the HC-12 module. Connects to HC-12 TX
-PING_BUTTON | 4 | Push button connected to ground. transmit: "ping:handheldsend to the tracking device
+CELLVOLTS_BUTTON | 4 | Push button connected to ground. transmit: "cell:volts" to the tracking device
 REQUEST_GPS_ONCE_BUTTON | 5 | Push button connected to ground. transmit: "gps:once"
 REQUEST_GPS_CONTINUOUS_BUTTON | 6 | Push button connected to ground. transmit: "gps:continuous"
 REQUEST_GPS_STOP_BUTTON | 7 | Push button connected to ground. transmit: "gps:stop"
@@ -38,8 +38,8 @@ rst | A1 | Connection to 1.8" TFT LCD screen. Connects to TFT RESET/
 ## Description of Arduino GPS tracking device
 The Arduino tracking device should be attached to an object which the user wants to track. It is powered by an 18650 Li-ion cell and consists of Li-ion protection and charging circuitry, an Arduino, a Ublox Neo-6m (GY-NEO6MV2) GPS module and a HC-12 wireless communication module. When powered, the Arduino will go into a light sleep mode. It will wake up when it receives serial data from the HC-12 module. The Arduino will interpret the message formtted as \<datatype>:\<CSV of data> into \<data type> and an array of data for each item in \<CSV of data>. Then, the tracker respond in the appropriate way. The messages it understands and the way it responds are listed below:
 
-#### if receive "ping:handheldsend"
-send "ping:trackerreceived"
+#### if receive "cell:volts"
+send "cell:\[millivolts\]" where millivolts = voltage of the tracking device Arduino's VCC pin
 
 #### if receive "gps:once"
 send "message:received gps once" and try to get GPS coordinates. Then, send coordinates once and go to sleep
