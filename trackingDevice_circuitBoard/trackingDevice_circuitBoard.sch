@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:trackingDevice_circuitBoard-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -228,7 +229,7 @@ Text Label 2000 1000 0    60   ~ 0
 NoConn ~ 2000 900 
 Text Label 3600 3600 0    60   ~ 0
 3(**)
-Text Label 4350 2500 0    60   ~ 0
+Text Label 4300 2500 0    60   ~ 0
 4
 $Comp
 L GND #PWR06
@@ -537,24 +538,13 @@ F 3 "" H 2200 1200 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2000 1200 2200 1200
-$Comp
-L 2N7000 Q1
-U 1 1 59346998
-P 4300 2300
-F 0 "Q1" H 4500 2375 50  0000 L CNN
-F 1 "2N7000" H 4500 2300 50  0000 L CNN
-F 2 "TO_SOT_Packages_THT:TO-92_Inline_Wide" H 4500 2225 50  0001 L CIN
-F 3 "" H 4300 2300 50  0001 L CNN
-	1    4300 2300
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	2800 4300 4050 4300
 Wire Wire Line
 	2300 2900 2300 2200
 Connection ~ 2300 2200
 Wire Wire Line
-	4050 2200 4050 4300
+	4050 4300 4050 2200
 Connection ~ 3500 4300
 Connection ~ 4050 2200
 NoConn ~ 10350 1500
@@ -562,4 +552,15 @@ Text Label 3200 2200 0    60   ~ 0
 GPS_GND
 Wire Wire Line
 	2000 2200 4100 2200
+$Comp
+L Q_NPN_EBC Q1
+U 1 1 5B1C85F2
+P 4300 2300
+F 0 "Q1" H 4500 2350 50  0000 L CNN
+F 1 "Q_NPN_EBC" H 4500 2250 50  0000 L CNN
+F 2 "TO_SOT_Packages_THT:TO-126_Vertical" H 4500 2400 50  0001 C CNN
+F 3 "" H 4300 2300 50  0001 C CNN
+	1    4300 2300
+	0    -1   -1   0   
+$EndComp
 $EndSCHEMATC
