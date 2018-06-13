@@ -41,8 +41,8 @@ rst | A1 | Connection to 1.8" TFT LCD screen. Connects to TFT RESET/
 The Arduino tracking device should be attached to an object which the user wants to track. It is powered by an 18650 Li-ion cell and consists of Li-ion protection and charging circuitry, an Arduino, a Ublox Neo-6m (GY-NEO6MV2) GPS module and a HC-12 wireless communication module. When powered, the Arduino will go into a light sleep mode. It will wake up when it receives serial data from the HC-12 module. The Arduino will interpret the message formtted as \<datatype>:\<CSV of data> into \<data type> and an array of data for each item in \<CSV of data>. Then, the tracker respond in the appropriate way. The messages it understands and the way it responds are listed below:
 
 #### Kicad designs
-<img src="/docs/trackingDevice_circuitBoard_Schematic.svg">
-<img src="/docs/trackingDevice_circuitBoard_Circuit board.svg">
+<img src="/trackingDevice_circuitBoard/trackingDevice_circuitBoard_Schematic.svg">
+<img src="/trackingDevice_circuitBoard/trackingDevice_circuitBoard_Circuit board.svg">
 
 #### if receive "cell:volts"
 send "cell:\[millivolts\]" where millivolts = voltage of the tracking device Arduino's VCC pin
