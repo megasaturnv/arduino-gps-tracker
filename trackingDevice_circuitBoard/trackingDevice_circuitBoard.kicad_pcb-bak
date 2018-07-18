@@ -15,7 +15,7 @@
   (page A4)
   (title_block
     (title "Arduino GPS Tracker - Tracking Device")
-    (date 2018-07-16)
+    (date 2017-06-04)
     (rev 1)
     (company "By Megasaturnv")
     (comment 1 "For Veroboard / Stripboard")
