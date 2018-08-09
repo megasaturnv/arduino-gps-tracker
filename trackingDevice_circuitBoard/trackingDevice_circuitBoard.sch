@@ -37,7 +37,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Arduino GPS Tracker - Tracking Device"
-Date "2018-07-16"
+Date "2018-08-09"
 Rev "1"
 Comp "By Megasaturnv"
 Comment1 "For Veroboard / Stripboard"
@@ -558,7 +558,7 @@ U 1 1 5B1C85F2
 P 4300 2300
 F 0 "Q1" H 4500 2350 50  0000 L CNN
 F 1 "Q_NPN_EBC" H 4500 2250 50  0000 L CNN
-F 2 "TO_SOT_Packages_THT:TO-126_Vertical" H 4500 2400 50  0001 C CNN
+F 2 "TO_SOT_Packages_THT:TO-92_Inline_Wide" H 4500 2400 50  0001 C CNN
 F 3 "" H 4300 2300 50  0001 C CNN
 	1    4300 2300
 	0    -1   -1   0   
@@ -574,4 +574,6 @@ F 3 "" H 4300 2650 50  0001 C CNN
 	1    4300 2650
 	1    0    0    -1  
 $EndComp
+NoConn ~ 10500 1800
+NoConn ~ 9000 1800
 $EndSCHEMATC
