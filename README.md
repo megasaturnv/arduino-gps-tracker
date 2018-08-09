@@ -1,6 +1,6 @@
 # arduino-gps-tracker
 ## Synopsis
-An Arduino-based GPS tracking solution. One Arduino and Ublox Neo-6m (GY-NEO6MV2) GPS module is used as the GPS tracking device. The other is an Arduino handheld controller which requests information from the tracking device and displays the coordinates, GPS location and location on a map. By default, the display is a 128x160 1.8" TFT LCD but the code can be adapted for other displays. Communication occurs between the two devices with the HC-12 wireless serial communication module. This project can be adapted to use other methods of wireless communication such as the XBee or GSM mobile network. Please make sure the frequency used and transmitting power is legal in your country.
+An Arduino-based GPS tracking solution. One Arduino and Ublox Neo-6m (GY-NEO6MV2) GPS module on stripboard / veroboard is used as the GPS tracking device. The other is an Arduino handheld controller which requests information from the tracking device and displays the coordinates, GPS location and location on a map. By default, the display is a 128x160 1.8" TFT LCD but the code can be adapted for other displays. Communication occurs between the two devices with the HC-12 wireless serial communication module. This project can be adapted to use other methods of wireless communication such as the XBee or GSM mobile network. Please make sure the frequency used and transmitting power is legal in your country.
 
 <img src="/docs/top down view - Annotated.jpg">
 
@@ -38,12 +38,13 @@ rst | A1 | Connection to 1.8" TFT LCD screen. Connects to TFT RESET/
 *COMING SOON*
 
 ## Description of Arduino GPS tracking device
-The Arduino tracking device should be attached to an object which the user wants to track. It is powered by an 18650 Li-ion cell and consists of Li-ion protection and charging circuitry, an Arduino, a Ublox Neo-6m (GY-NEO6MV2) GPS module and a HC-12 wireless communication module. When powered, the Arduino will go into a light sleep mode. It will wake up when it receives serial data from the HC-12 module. The Arduino will interpret the message formtted as \<datatype>:\<CSV of data> into \<data type> and an array of data for each item in \<CSV of data>. Then, the tracker respond in the appropriate way. The messages it understands and the way it responds are listed below:
+The Arduino tracking device should be attached to an object which the user wants to track. It is powered by an 18650 Li-ion cell and consists of Li-ion protection and charging circuitry, an Arduino, a Ublox Neo-6m (GY-NEO6MV2) GPS module and a HC-12 wireless communication module. The circuit is built onto a peice of stripboard / veroboard. When powered, the Arduino will go into a light sleep mode. It will wake up when it receives serial data from the HC-12 module. The Arduino will interpret the message formtted as \<datatype>:\<CSV of data> into \<data type> and an array of data for each item in \<CSV of data>. Then, the tracker responds in the appropriate way.
 
-#### Kicad designs
+### Kicad designs
 <img src="/trackingDevice_circuitBoard/trackingDevice_circuitBoard_Schematic.svg">
 <img src="/trackingDevice_circuitBoard/trackingDevice_circuitBoard_Circuit board.svg">
 
+### The messages the Arduino GPS tracking device understands and the way it responds are listed below:
 #### if receive "cell:volts"
 send "cell:\[millivolts\]" where millivolts = voltage of the tracking device Arduino's VCC pin
 
@@ -76,7 +77,7 @@ SOFTWARE_SERIAL_TX | 2 | Software serial TX pin, to be connected to the GPS modu
 I have created this project to be used as a dog tracker, but it can easily track a car and other valuable item.
 
 ## Installation
-Upload gpsTracker_trackingDevice to the Arduino which will be used in the tracking device. Upload gpsTracker_handheldController to the Arduino which will be used in the handheld controller. Follow the build diagrams and create the circuit board from the KiCAD files to construct the project.
+Upload gpsTracker_handheldController to the Arduino which will be used in the handheld controller. Upload gpsTracker_trackingDevice to the Arduino which will be used in the tracking device. Follow the build diagrams and create the stripboard / veroboard circuit board from the KiCAD files to construct the GPS tracking device.
 
 ## Libraries used
 ### Handheld controller
