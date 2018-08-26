@@ -12,6 +12,7 @@
 #define SOFTWARE_SERIAL_RX 3 // Software serial RX pin, to be connected to the GPS module's TX
 #define SOFTWARE_SERIAL_TX 2 // Software serial TX pin, to be connected to the GPS module's RX
 #define GPS_POWER_PIN 4 // Control power to the GPS module via a transistor
+#define HC12_PROGRAMMING_PIN 5 // Connects to the HC12's programming pin. Set the pin low to enable programming mode
 
 TinyGPS gps;
 SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
@@ -21,9 +22,11 @@ SoftwareSerial ss(SOFTWARE_SERIAL_RX, SOFTWARE_SERIAL_TX); // For GPS module
 // ################################################################
 // #### YOU MUST UPDATE THIS ARRAY IF ANY PIN CHANGES ARE MADE ####
 // ################################################################
-const byte OutputPowerSavingPins[] = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+const byte OutputPowerSavingPins[] = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 unsigned long startMillis, targetTime;
+
+String previousHC12Message = "Nothing yet!";
 
 bool requestSleep = true;
 byte gpsRequestMode = 0;
@@ -98,14 +101,17 @@ long readVcc() {
 }
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT); // Setup pin 13 (Arduino's LED pin)
+  pinMode(LED_BUILTIN, OUTPUT); // Setup Arduino's built-in LED pin (usually pin 13)
   digitalWrite(LED_BUILTIN, HIGH);
+
+  pinMode(HC12_PROGRAMMING_PIN, OUTPUT); // Setup pin which controls the HC-12 module's programming mode
+  digitalWrite(HC12_PROGRAMMING_PIN, HIGH);
 
   pinMode(GPS_POWER_PIN, OUTPUT); // Setup pin which controls GPS power via a transistor
   digitalWrite(GPS_POWER_PIN, LOW);
 
   Serial.begin(UART_SERIAL_BAUD); // HC-12 module on Arduino serial port. Incoming data here will wake up the arduino.
-  ss.begin(SS_SERIAL_BAUD);     // GPS module on Arduino ss port (software serial)
+  ss.begin(SS_SERIAL_BAUD);       // GPS module on Arduino ss port (software serial)
 
   // Save Power by writing all Digital IO to outputs. Remember to not damage any attached devices. Max pin current ~ 20mA
   // Loop for the amount of values in OutputPowerSavingPins array.
@@ -173,19 +179,41 @@ void loop() {
         if (datacsvarray[0] == "volts") {
           transmit("cell", String(readVcc()) + "mV");
         }
-      } else if (datatype == "gps") {
+      } else if (datatype == "gps") { // Interpret GPS command
         // data = "latitude,longitude,num of satellites,accuracy,speed,direction,age of data,checksum"
-        if (datacsvarray[0] == "once") {
+        if (datacsvarray[0] == "once") { // Set GPS mode to find location once, transmit and then sleep
           transmit("message", "rcvd gps once");
           gpsRequestMode = 1;
-        } else if (datacsvarray[0] == "continuous") {
+        } else if (datacsvarray[0] == "continuous") { // Set GPS mode to continuously find location and transmit
           transmit("message", "rcvd continuous");
           gpsRequestMode = 2;
-        } else if (datacsvarray[0] == "stop") {
+        } else if (datacsvarray[0] == "stop") { // Set GPS mode to stop continuously locating and transmitting
           transmit("message", "rcvd gps stop");
           gpsRequestMode = 0;
         }
         targetTime = millis() + GPS_TIMEOUT;
+      } else if (datatype == "hc-12") { // Program the HC-12 module
+        transmit("message", "pgrm hc12...");
+
+        digitalWrite(HC12_PROGRAMMING_PIN, LOW);  // Set HC-12 programming pin low
+        while (Serial.available() > 0) { // Clear anything that could be in the serial buffer
+          char t = Serial.read();
+        }
+        //Serial.flush();
+        Serial.print(datacsvarray[0]);  // Send the HC-12 command over serial
+        delay(250);
+        previousHC12Message = Serial.readStringUntil('\n'); // Store the recevied string in previousHC12Message variable
+        delay(250);
+        while (Serial.available() > 0) { // Clear anything that could be in the serial buffer
+          char t = Serial.read();
+        }
+        //Serial.flush();
+        digitalWrite(HC12_PROGRAMMING_PIN, HIGH);  // Set HC-12 programming pin high again
+        delay(250);
+
+        transmit("message", previousHC12Message);
+      } else if (datatype == "hc-12-prev") { // Send the previous HC-12 programming message
+        transmit("message", previousHC12Message);
       } else {
         //transmit("message", "datatype invalid");
         delay(100); // Do nothing
